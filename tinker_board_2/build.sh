@@ -821,7 +821,7 @@ function build_debian(){
 
 	echo "=========Start building debian for $ARCH========="
 
-	cd debian_new
+	cd debian
 
 	ROOTFS_BASE_DIR="../rootfs-base"
 
@@ -857,7 +857,7 @@ function build_rootfs(){
 			;;
 		debian)
 			build_debian
-			ln -rsf debian_new/linaro-rootfs.img \
+			ln -rsf debian/linaro-rootfs.img \
 				$RK_ROOTFS_DIR/rootfs.ext4
 			;;
 		*)
