@@ -670,7 +670,9 @@ function build_kernel(){
 	build_check_cross_compile
 
 	cd kernel
-	make ARCH=$RK_ARCH $RK_KERNEL_DEFCONFIG $RK_KERNEL_DEFCONFIG_FRAGMENT
+	if [ ! -e ".config" ]; then
+		make ARCH=$RK_ARCH $RK_KERNEL_DEFCONFIG $RK_KERNEL_DEFCONFIG_FRAGMENT
+	fi
 	make ARCH=$RK_ARCH $RK_KERNEL_DTS.img -j$RK_JOBS
 	if [ -f "$TOP_DIR/device/rockchip/$RK_TARGET_PRODUCT/$RK_KERNEL_FIT_ITS" ]; then
 		$COMMON_DIR/mk-fitimage.sh $TOP_DIR/kernel/$RK_BOOT_IMG \
@@ -710,7 +712,9 @@ function build_modules(){
 	mkdir -p $LIB_MODULES_DIR
 
 	cd kernel
-	make ARCH=$RK_ARCH $RK_KERNEL_DEFCONFIG $RK_KERNEL_DEFCONFIG_FRAGMENT
+	if [ ! -e ".config" ]; then
+		make ARCH=$RK_ARCH $RK_KERNEL_DEFCONFIG $RK_KERNEL_DEFCONFIG_FRAGMENT
+	fi
 	make ARCH=$RK_ARCH modules -j$RK_JOBS
 	make ARCH=$RK_ARCH modules_install INSTALL_MOD_PATH=$LIB_MODULES_DIR
 
