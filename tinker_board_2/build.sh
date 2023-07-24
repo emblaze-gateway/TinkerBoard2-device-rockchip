@@ -829,13 +829,40 @@ function build_debian(){
 		ROOTFS_BASE_DIR="."
 	fi
 
-	if [ ! -e linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz ]; then
-		RELEASE=$RK_DEBIAN_VERSION TARGET=desktop ARCH=$ARCH ./mk-base-debian.sh
-		ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
-	fi
+	case "$1" in
+		all)
+			if [ -e linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz ]; then
+				rm linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
+			fi
+			RELEASE=$RK_DEBIAN_VERSION TARGET=emblaze ARCH=$ARCH ./mk-base-debian.sh
+			ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
 
-	VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
-	./mk-image.sh
+			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
+			./mk-image.sh
+			;;
+		append)
+			if [ ! -e linaro-rootfs.img ]; then
+				echo -e "\033[36m Run mk-image.sh first \033[0m"
+				exit -1
+			fi
+			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
+			./mk-image.sh
+			;;
+		*)
+			if [ ! -e linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz ]; then
+				RELEASE=$RK_DEBIAN_VERSION TARGET=emblaze ARCH=$ARCH ./mk-base-debian.sh
+				ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
+			else
+				echo "Skip mk-base-debian.sh"
+			fi
+			if [ ! -e linaro-rootfs.img ]; then
+				VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
+				./mk-image.sh
+			else
+				echo "Skip mk-rootfs-$RK_DEBIAN_VERSION.sh"
+			fi
+			;;
+	esac
 
 	finish_build
 }
@@ -855,8 +882,18 @@ function build_rootfs(){
 			ln -rsf yocto/build/latest/rootfs.img \
 				$RK_ROOTFS_DIR/rootfs.ext4
 			;;
+		debian_append)
+			build_debian append
+			ln -rsf debian/linaro-rootfs.img \
+				$RK_ROOTFS_DIR/rootfs.ext4
+			;;
+		debian_all)
+			build_debian all
+			ln -rsf debian/linaro-rootfs.img \
+				$RK_ROOTFS_DIR/rootfs.ext4
+			;;
 		debian)
-			build_debian
+			build_debian default
 			ln -rsf debian/linaro-rootfs.img \
 				$RK_ROOTFS_DIR/rootfs.ext4
 			;;
@@ -1329,7 +1366,7 @@ for option in ${OPTIONS}; do
 		loader) build_loader ;;
 		kernel) build_kernel ;;
 		modules) build_modules ;;
-		rootfs|buildroot|debian|yocto) build_rootfs $option ;;
+		rootfs|buildroot|debian|debian_all|debian_append|yocto) build_rootfs $option ;;
 		pcba) build_pcba ;;
 		ramboot) build_ramboot ;;
 		recovery) build_recovery ;;
