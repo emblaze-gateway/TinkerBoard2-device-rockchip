@@ -1060,6 +1060,75 @@ function check_security_condition(){
 	echo "Security: finish check"
 }
 
+function build_step1(){
+	echo "============================================"
+	echo "TARGET_ARCH=$RK_ARCH"
+	echo "TARGET_PLATFORM=$RK_TARGET_PRODUCT"
+	echo "TARGET_UBOOT_CONFIG=$RK_UBOOT_DEFCONFIG"
+	echo "TARGET_SPL_CONFIG=$RK_SPL_DEFCONFIG"
+	echo "TARGET_KERNEL_CONFIG=$RK_KERNEL_DEFCONFIG"
+	echo "TARGET_KERNEL_DTS=$RK_KERNEL_DTS"
+	echo "TARGET_TOOLCHAIN_CONFIG=$RK_CFG_TOOLCHAIN"
+	echo "TARGET_BUILDROOT_CONFIG=$RK_CFG_BUILDROOT"
+	echo "TARGET_RECOVERY_CONFIG=$RK_CFG_RECOVERY"
+	echo "TARGET_PCBA_CONFIG=$RK_CFG_PCBA"
+	echo "TARGET_RAMBOOT_CONFIG=$RK_CFG_RAMBOOT"
+	echo "============================================"
+
+	# NOTE: On secure boot-up world, if the images build with fit(flattened image tree)
+	#       we will build kernel and ramboot firstly,
+	#       and then copy images into u-boot to sign the images.
+	if [ "$RK_RAMDISK_SECURITY_BOOTUP" != "true" ];then
+		#note: if build spl, it will delete loader.bin in uboot directory,
+		# so can not build uboot and spl at the same time.
+		if [ -z $RK_SPL_DEFCONFIG ]; then
+			build_uboot
+		else
+			build_spl
+		fi
+	fi
+
+	check_security_condition
+	build_loader
+	build_kernel
+	build_modules
+	build_toolchain
+
+	finish_build
+}
+
+function build_step2(){
+	echo "============================================"
+	echo "TARGET_ARCH=$RK_ARCH"
+	echo "TARGET_PLATFORM=$RK_TARGET_PRODUCT"
+	echo "TARGET_UBOOT_CONFIG=$RK_UBOOT_DEFCONFIG"
+	echo "TARGET_SPL_CONFIG=$RK_SPL_DEFCONFIG"
+	echo "TARGET_KERNEL_CONFIG=$RK_KERNEL_DEFCONFIG"
+	echo "TARGET_KERNEL_DTS=$RK_KERNEL_DTS"
+	echo "TARGET_TOOLCHAIN_CONFIG=$RK_CFG_TOOLCHAIN"
+	echo "TARGET_BUILDROOT_CONFIG=$RK_CFG_BUILDROOT"
+	echo "TARGET_RECOVERY_CONFIG=$RK_CFG_RECOVERY"
+	echo "TARGET_PCBA_CONFIG=$RK_CFG_PCBA"
+	echo "TARGET_RAMBOOT_CONFIG=$RK_CFG_RAMBOOT"
+	echo "============================================"
+
+	build_rootfs ${RK_ROOTFS_SYSTEM:-buildroot}
+	build_recovery
+	build_ramboot
+
+	if [ "$RK_RAMDISK_SECURITY_BOOTUP" = "true" ];then
+		#note: if build spl, it will delete loader.bin in uboot directory,
+		# so can not build uboot and spl at the same time.
+		if [ -z $RK_SPL_DEFCONFIG ]; then
+			build_uboot
+		else
+			build_spl
+		fi
+	fi
+
+	finish_build
+}
+
 function build_all(){
 	echo "============================================"
 	echo "TARGET_ARCH=$RK_ARCH"
@@ -1277,6 +1346,23 @@ function build_save(){
 	finish_build
 }
 
+function build_step0(){
+	rm -fr $TOP_DIR/rockdev
+
+	finish_build
+}
+
+function build_step3(){
+	build_firmware
+	build_updateimg
+	sudo ./device/rockchip/tinker_board_2/sdboot.sh
+	build_save
+
+	build_check_power_domain
+
+	finish_build
+}
+
 function build_allsave(){
 	rm -fr $TOP_DIR/rockdev
 	build_all
@@ -1350,6 +1436,10 @@ for option in ${OPTIONS}; do
 			ln -rsf $CONF $BOARD_CONFIG
 			;;
 		lunch) build_select_board ;;
+		step0) build_step0 ;;
+		step1) build_step1 ;;
+		step2) build_step2 ;;
+		step3) build_step3 ;;
 		all) build_all ;;
 		save) build_save ;;
 		allsave) build_allsave ;;
