@@ -850,6 +850,9 @@ function build_debian(){
 			;;
 		*)
 			if [ ! -e linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz ]; then
+				if [ -e linaro-rootfs.img ]; then
+					rm linaro-rootfs.img
+				fi
 				RELEASE=$RK_DEBIAN_VERSION TARGET=emblaze ARCH=$ARCH ./mk-base-debian.sh
 				ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
 			else
