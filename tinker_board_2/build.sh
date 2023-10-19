@@ -863,11 +863,11 @@ function build_debian(){
 			if [ ! -e linaro-rootfs.img ]; then
 				VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
 				./mk-image.sh
-				VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
-				./mk-image.sh
 			else
 				echo "Skip mk-rootfs-$RK_DEBIAN_VERSION.sh"
 			fi
+			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
+			./mk-image.sh
 			;;
 	esac
 
