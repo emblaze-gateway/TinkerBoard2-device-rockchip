@@ -829,45 +829,63 @@ function build_debian(){
 		ROOTFS_BASE_DIR="."
 	fi
 
+	function build_debian_pkg_install(){
+        RELEASE=$RK_DEBIAN_VERSION TARGET=emblaze ARCH=$ARCH ./mk-base-debian.sh
+        ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
+	}
+
+	function build_debian_rootfs(){
+        VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
+        ./mk-image.sh
+	}
+
+	function build_debian_rootfs_append(){
+		if [ -e ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh ]; then
+			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
+			./mk-image.sh
+		fi
+	}
+
+	function build_debian_rootfs_emblaze(){
+		if [ -e ./mk-rootfs-$RK_DEBIAN_VERSION-emblaze.sh ]; then
+			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-emblaze.sh
+			./mk-image.sh
+		fi
+	}
+
 	case "$1" in
 		all)
 			if [ -e linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz ]; then
 				rm linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
 			fi
-			RELEASE=$RK_DEBIAN_VERSION TARGET=emblaze ARCH=$ARCH ./mk-base-debian.sh
-			ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
-
-			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
-			./mk-image.sh
-			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
-			./mk-image.sh
+            build_debian_pkg_install
+			build_debian_rootfs
+			build_debian_rootfs_append
+			build_debian_rootfs_emblaze
 			;;
-		append)
+		emblaze)
 			if [ ! -e linaro-rootfs.img ]; then
 				echo -e "\033[36m Run mk-image.sh first \033[0m"
 				exit -1
 			fi
-			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
-			./mk-image.sh
+			build_debian_rootfs_emblaze
 			;;
 		*)
 			if [ ! -e linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz ]; then
 				if [ -e linaro-rootfs.img ]; then
 					rm linaro-rootfs.img
 				fi
-				RELEASE=$RK_DEBIAN_VERSION TARGET=emblaze ARCH=$ARCH ./mk-base-debian.sh
-				ln -rsf $ROOTFS_BASE_DIR/linaro-$RK_DEBIAN_VERSION-alip-$ARCH-*.tar.gz linaro-$RK_DEBIAN_VERSION-alip-$ARCH.tar.gz
+                build_debian_pkg_install
 			else
 				echo "Skip mk-base-debian.sh"
 			fi
 			if [ ! -e linaro-rootfs.img ]; then
-				VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION.sh
-				./mk-image.sh
+                build_debian_rootfs
+                build_debian_rootfs_append
 			else
 				echo "Skip mk-rootfs-$RK_DEBIAN_VERSION.sh"
 			fi
-			VERSION_NUMBER=$VERSION_NUMBER VERSION=$VERSION ARCH=$ARCH ./mk-rootfs-$RK_DEBIAN_VERSION-append.sh
-			./mk-image.sh
+			build_debian_rootfs_emblaze
 			;;
 	esac
 
@@ -889,8 +907,8 @@ function build_rootfs(){
 			ln -rsf yocto/build/latest/rootfs.img \
 				$RK_ROOTFS_DIR/rootfs.ext4
 			;;
-		debian_append)
-			build_debian append
+		debian_emblaze)
+			build_debian emblaze
 			ln -rsf debian/linaro-rootfs.img \
 				$RK_ROOTFS_DIR/rootfs.ext4
 			;;
@@ -1463,7 +1481,7 @@ for option in ${OPTIONS}; do
 		loader) build_loader ;;
 		kernel) build_kernel ;;
 		modules) build_modules ;;
-		rootfs|buildroot|debian|debian_all|debian_append|yocto) build_rootfs $option ;;
+		rootfs|buildroot|debian|debian_all|debian_emblaze|yocto) build_rootfs $option ;;
 		pcba) build_pcba ;;
 		ramboot) build_ramboot ;;
 		recovery) build_recovery ;;
