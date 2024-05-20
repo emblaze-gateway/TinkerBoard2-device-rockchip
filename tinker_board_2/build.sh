@@ -863,6 +863,13 @@ function build_debian(){
 			build_debian_rootfs_append
 			build_debian_rootfs_emblaze
 			;;
+		append)
+			if [ ! -e linaro-rootfs.img ]; then
+				echo -e "\033[36m Run mk-image.sh first \033[0m"
+				exit -1
+			fi
+			build_debian_rootfs_append
+			;;
 		emblaze)
 			if [ ! -e linaro-rootfs.img ]; then
 				echo -e "\033[36m Run mk-image.sh first \033[0m"
@@ -905,6 +912,11 @@ function build_rootfs(){
 		yocto)
 			build_yocto
 			ln -rsf yocto/build/latest/rootfs.img \
+				$RK_ROOTFS_DIR/rootfs.ext4
+			;;
+		debian_append)
+			build_debian append
+			ln -rsf debian/linaro-rootfs.img \
 				$RK_ROOTFS_DIR/rootfs.ext4
 			;;
 		debian_emblaze)
@@ -1481,7 +1493,7 @@ for option in ${OPTIONS}; do
 		loader) build_loader ;;
 		kernel) build_kernel ;;
 		modules) build_modules ;;
-		rootfs|buildroot|debian|debian_all|debian_emblaze|yocto) build_rootfs $option ;;
+		rootfs|buildroot|debian|debian_all|debian_emblaze|debian_append|yocto) build_rootfs $option ;;
 		pcba) build_pcba ;;
 		ramboot) build_ramboot ;;
 		recovery) build_recovery ;;
